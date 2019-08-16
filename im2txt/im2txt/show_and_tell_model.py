@@ -244,13 +244,17 @@ class ShowAndTellModel(object):
     # This LSTM cell has biases and outputs tanh(new_c) * sigmoid(o), but the
     # modified LSTM in the "Show and Tell" paper has no biases and outputs
     # new_c * sigmoid(o).
-    lstm_cell = tf.contrib.rnn.BasicLSTMCell(
-        num_units=self.config.num_lstm_units, state_is_tuple=True)
+    lstm_cells = [tf.nn.rnn_cell.LSTMCell(
+        num_units=self.config.num_lstm_units,
+        state_is_tuple=True)
+        for _ in range(self.config.num_lstm_layers)]
     if self.mode == "train":
-      lstm_cell = tf.contrib.rnn.DropoutWrapper(
+      lstm_cells = [tf.contrib.rnn.DropoutWrapper(
           lstm_cell,
           input_keep_prob=self.config.lstm_dropout_keep_prob,
           output_keep_prob=self.config.lstm_dropout_keep_prob)
+          for lstm_cell in lstm_cells]
+    lstm_cell = tf.nn.rnn_cell.MultiRNNCell(lstm_cells);
 
     with tf.variable_scope("lstm", initializer=self.initializer) as lstm_scope:
       # Feed the image embeddings to set the initial LSTM state.
@@ -264,21 +268,33 @@ class ShowAndTellModel(object):
       if self.mode == "inference":
         # In inference mode, use concatenated states for convenient feeding and
         # fetching.
-        cc = tf.concat(axis=1, values=initial_state, name="initial_state")
+        # cc = tf.concat(axis=1, values=initial_state, name="initial_state")
+        cc = tf.reshape(initial_state,
+                [1,2*self.config.num_lstm_units*self.config.num_lstm_layers],
+                name="initial_state")
 
         # Placeholder for feeding a batch of concatenated states.
-        state_feed = tf.placeholder(dtype=tf.float32,
-                                    shape=[None, sum(lstm_cell.state_size)],
-                                    name="state_feed")
-        state_tuple = tf.split(value=state_feed, num_or_size_splits=2, axis=1)
+        # state_feed = tf.placeholder(dtype=tf.float32,
+        #                             shape=[None, sum(lstm_cell.state_size)],
+        #                             name="state_feed")
+        state_feed = tf.placeholder(dtype=tf.float32, shape=[self.config.num_lstm_layers,
+                                                     2,
+                                                     None,
+                                                     self.config.num_lstm_units], name="state_feed")
+        state_unstacked = tf.unstack(value=state_feed, axis=0)
 
+        # state_tuple = tf.split(value=state_feed, num_or_size_splits=2, axis=1)
+        state_tuple = tuple([tf.nn.rnn_cell.LSTMStateTuple(state_unstacked[idx][0],
+                                                           state_unstacked[idx][1])
+                             for idx in range(self.config.num_lstm_layers)])
         # Run a single LSTM step.
         lstm_outputs, state_tuple = lstm_cell(
             inputs=tf.squeeze(self.seq_embeddings, axis=[1]),
             state=state_tuple)
 
         # Concatentate the resulting state.
-        tf.concat(axis=1, values=state_tuple, name="state")
+        # tf.concat(axis=1, values=state_tuple, name="state")
+        tf.convert_to_tensor(state_tuple, name="state")
       else:
         # Run the batch of sequence embeddings through the LSTM.
         sequence_length = tf.reduce_sum(self.input_mask, 1)

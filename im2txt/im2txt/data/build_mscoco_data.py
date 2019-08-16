@@ -65,11 +65,6 @@ The SequenceExample proto contains the following fields:
     image/caption: list of strings containing the (tokenized) caption words
     image/caption_ids: list of integer ids corresponding to the caption words
 
-The captions are tokenized using the NLTK (http://www.nltk.org/) word tokenizer.
-The vocabulary of word identifiers is constructed from the sorted list (by
-descending frequency) of word tokens in the training set. Only tokens appearing
-at least 4 times are considered; all other words get the "unknown" word id.
-
 NOTE: This script will consume around 100GB of disk space because each image
 in the MSCOCO dataset is replicated ~5 times (once per caption) in the output.
 This is done for two reasons:
@@ -95,7 +90,6 @@ import threading
 
 
 
-import nltk.tokenize
 import numpy as np
 from six.moves import xrange
 import tensorflow as tf
@@ -119,13 +113,13 @@ tf.flags.DEFINE_integer("val_shards", 4,
 tf.flags.DEFINE_integer("test_shards", 8,
                         "Number of shards in testing TFRecord files.")
 
-tf.flags.DEFINE_string("start_word", "<S>",
+tf.flags.DEFINE_string("start_word", "S",
                        "Special word added to the beginning of each sentence.")
-tf.flags.DEFINE_string("end_word", "</S>",
+tf.flags.DEFINE_string("end_word", "E",
                        "Special word added to the end of each sentence.")
 tf.flags.DEFINE_string("unknown_word", "<UNK>",
                        "Special word meaning 'unknown'.")
-tf.flags.DEFINE_integer("min_word_count", 4,
+tf.flags.DEFINE_integer("min_word_count", 16,
                         "The minimum number of occurrences of each word in the "
                         "training set for inclusion in the vocabulary.")
 tf.flags.DEFINE_string("word_counts_output_file", "/tmp/word_counts.txt",
@@ -390,7 +384,7 @@ def _process_caption(caption):
     A list of strings; the tokenized caption.
   """
   tokenized_caption = [FLAGS.start_word]
-  tokenized_caption.extend(nltk.tokenize.word_tokenize(caption.lower()))
+  tokenized_caption.extend(list(caption.lower()))
   tokenized_caption.append(FLAGS.end_word)
   return tokenized_caption
 

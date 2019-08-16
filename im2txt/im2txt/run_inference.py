@@ -67,7 +67,8 @@ def main(_):
     # Prepare the caption generator. Here we are implicitly using the default
     # beam search parameters. See caption_generator.py for a description of the
     # available beam search parameters.
-    generator = caption_generator.CaptionGenerator(model, vocab)
+    generator = caption_generator.CaptionGenerator(model, vocab,
+            max_caption_length=120)
 
     for filename in filenames:
       with tf.gfile.GFile(filename, "rb") as f:
@@ -77,7 +78,8 @@ def main(_):
       for i, caption in enumerate(captions):
         # Ignore begin and end words.
         sentence = [vocab.id_to_word(w) for w in caption.sentence[1:-1]]
-        sentence = " ".join(sentence)
+        sentence = "".join(sentence)
+        sentence = sentence.replace("_", " ")
         print("  %d) %s (p=%f)" % (i, sentence, math.exp(caption.logprob)))
 
 
