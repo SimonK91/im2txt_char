@@ -90,7 +90,7 @@ class COCO:
 
         cats = []
         catToImgs = []
-        if self.dataset['type'] == 'instances':
+        if 'type' in self.dataset and self.dataset['type'] == 'instances':
             cats = {cat['id']: [] for cat in self.dataset['categories']}
             for cat in self.dataset['categories']:
                 cats[cat['id']] = cat
@@ -136,7 +136,7 @@ class COCO:
                 anns = self.dataset['annotations']
             anns = anns if len(catIds)  == 0 else [ann for ann in anns if ann['category_id'] in catIds]
             anns = anns if len(areaRng) == 0 else [ann for ann in anns if ann['area'] > areaRng[0] and ann['area'] < areaRng[1]]
-        if self.dataset['type'] == 'instances':
+        if 'type' in self.dataset and self.dataset['type'] == 'instances':
             if not iscrowd == None:
                 ids = [ann['id'] for ann in anns if ann['iscrowd'] == iscrowd]
             else:
@@ -229,7 +229,7 @@ class COCO:
         """
         if len(anns) == 0:
             return 0
-        if self.dataset['type'] == 'instances':
+        if 'type' in self.dataset and self.dataset['type'] == 'instances':
             ax = plt.gca()
             polygons = []
             color = []
@@ -254,7 +254,7 @@ class COCO:
                     ax.imshow(np.dstack( (img, mask*0.5) ))
             p = PatchCollection(polygons, facecolors=color, edgecolors=(0,0,0,1), linewidths=3, alpha=0.4)
             ax.add_collection(p)
-        if self.dataset['type'] == 'captions':
+        if 'type' in self.dataset and self.dataset['type'] == 'captions':
             for ann in anns:
                 print ann['caption']
 
@@ -267,7 +267,8 @@ class COCO:
         res = COCO()
         res.dataset['images'] = [img for img in self.dataset['images']]
         res.dataset['info'] = copy.deepcopy(self.dataset['info'])
-        res.dataset['type'] = copy.deepcopy(self.dataset['type'])
+        if 'type' in self.dataset:
+            res.dataset['type'] = copy.deepcopy(self.dataset['type'])
         res.dataset['licenses'] = copy.deepcopy(self.dataset['licenses'])
 
         print 'Loading and preparing results...     '
