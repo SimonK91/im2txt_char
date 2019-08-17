@@ -27,8 +27,8 @@ class Vocabulary(object):
 
   def __init__(self,
                vocab_file,
-               start_word="<S>",
-               end_word="</S>",
+               start_word="S",
+               end_word="E",
                unk_word="<UNK>"):
     """Initializes the vocabulary.
 
@@ -45,7 +45,9 @@ class Vocabulary(object):
     tf.logging.info("Initializing vocabulary from file: %s", vocab_file)
 
     with tf.gfile.GFile(vocab_file, mode="r") as f:
-      reverse_vocab = list(f.readlines())
+      raw = f.read()
+      raw = raw.replace("  ", "_ ").replace("\n\n", "\n<br>")
+      reverse_vocab = raw.strip().split("\n")
     reverse_vocab = [line.split()[0] for line in reverse_vocab]
     assert start_word in reverse_vocab
     assert end_word in reverse_vocab
