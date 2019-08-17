@@ -32,3 +32,7 @@ if [[ $(ls $INCEPTION_CHECKPOINT | wc -l) -eq 0 ]]; then
     tar -xf "inception_v3_2016_08_28.tar.gz" -C "$INCEPTION_CHECKPOINT_PATH"
     rm inception_v3_2016_08_28.tar.gz
 fi
+
+# Prepare coco captioning library
+cd $ROOT_PATH/coco-caption
+./get_stanford_models.sh
